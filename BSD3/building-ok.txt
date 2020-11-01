@@ -1,0 +1,8 @@
+This program is made for plan 9 so you have to install 9base to build on linux, to do that run:
+$ git clone https://git.suckless.org/9base && cd 9base && make && su -c "make install"
+if the source dir for 9base is not located in ~/9base, then edit the Makefile.
+the headers u.h and libc.h are located in {THE SOURCE DIR FOR 9BASE}/lib9
+9base also installs some programs in /usr/local/plan9 by default.
+the binary is also static linked by default so you can remove 9base and whatever once you have built it.
+
+Building on plan 9 is pretty self explanatory.
