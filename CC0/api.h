@@ -1,7 +1,6 @@
 /*
  * 
-Published under CC0
-Public Domain Software Rendering
+Licensed under CC0, public domain software rendering toolkit.
  * 
  * */
 
@@ -33,8 +32,8 @@ If you want mp3 support, you will need libmp3123
 #define STB_IMAGE_IMPLEMENTATION
 #endif
 
-#include "stb_image.h"
-#include "3dMath.h"
+#include "../../include/stb_image.h"
+#include "../../include/3dMath.h"
 //#include "../../include/fixedmath.h"
 #ifndef c_chads_api
 #define c_chads_api
@@ -158,6 +157,7 @@ void tri2dND(int x0, int y0,
 //Renders 3D models using lines.
 void linemodel(pmod* mod, uchar r, uchar g, uchar b);
 void rensp(sprite* s, int x, int y);
+void renspadv(sprite* s, int x, int y, uint flips);
 //Used for tinting pure black and white sprites to the correct rgb.
 //Used for the text renderer.
 void rensptint(sprite* s, int x, int y,uchar r, uchar g, uchar b);
@@ -828,7 +828,28 @@ void linemodel(pmod* mod, uchar r, uchar g, uchar b){
 				r,g,b);
 	}
 }
-
+void renspadv(sprite* s, int x, int y, uint flips){
+	sprite temp;
+	temp = *s;
+	unsigned int spritedata[s->w * s->h];
+	temp.d = (unsigned char*)spritedata;
+	int startsx=0, startsy=0, endsx=s->w, endsy=s->h, stepsx = 1, stepsy = 1;
+	// int tx = 0, ty = 0;
+	if(flips & 1){ //Flip horizontal
+		startsx = s->w-1;
+		endsx = -1;
+		stepsx = -1;
+	}
+	if(flips & 2){ //Flip horizontal
+		startsy = s->h-1;
+		endsy = -1;
+		stepsy = -1;
+	}
+	for(int x = startsx, tx = 0; x != endsx; x+=stepsx, tx++)
+	for(int y = startsy, ty = 0; y != endsy; y+=stepsy, ty++)
+		spritedata[tx+ty*s->w] = ((uint*)s->d)[x + y*s->w];
+	rensp(&temp,x,y);
+}
 void rensp(sprite* s, int x, int y){
 	if(	x > surf->w || 
 		y > surf->h || 
@@ -841,10 +862,20 @@ void rensp(sprite* s, int x, int y){
 	for(int sy = offy; (sy < s->h) && (y+sy < surf->h); sy++)
 	{
 		int tx = sx+x;int ty = sy+y;
-		char* datum = surf->pixels; 
+		unsigned char* datum = surf->pixels; 
 		datum += (tx + ty * surf->w)*4;
-		if(s->d[(sx + sy * s->w)*4+A_] > 128)
-		*((uint*)datum) = *((uint*)(s->d+(sx + sy * s->w)*4));
+		uint dest = *((uint*)datum); 
+		unsigned char destA = *(datum+A_);
+		uint src = *((uint*)(s->d+(sx + sy * s->w)*4)); 
+		unsigned char srcA = *((s->d+(sx + sy * s->w)*4)+A_);
+		uint result;
+		float srcmult = srcA/255.0f;
+		float destmult = (255-srcA)/255.0f;
+		((unsigned char*)&result)[R_] = ((unsigned char*)&src)[R_] * srcmult + ((unsigned char*)&dest)[R_] * destmult;
+		((unsigned char*)&result)[G_] = ((unsigned char*)&src)[G_] * srcmult + ((unsigned char*)&dest)[G_] * destmult;
+		((unsigned char*)&result)[B_] = ((unsigned char*)&src)[B_] * srcmult + ((unsigned char*)&dest)[B_] * destmult;
+		((unsigned char*)&result)[A_] = destA;
+		*((uint*)datum) = result;
 	}
 }
 //Used for tinting pure black and white sprites to the correct rgb.
