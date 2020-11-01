@@ -49,8 +49,8 @@ const char* bubblespr = "\n"
 "``    KK   `\n"
 "`    K K   ``\n"
 "`     K    `\n"
-"``        ``\n"
-" ``     ```\n"
+"``   K    ``\n"
+" ``  K  ```\n"
 "   `````";//Notice how the last line does not end in \n
 
 float t = 0.0;
@@ -109,7 +109,7 @@ int main()
 				bubbles[i].x += bubbles[i].vx;
 				bubbles[i].y += bubbles[i].vy;
 				//renspdbuff(&mysprite,bubbles[i].x,bubbles[i].y,-0.3+randf());
-				rensp(&mysprite,bubbles[i].x,bubbles[i].y);
+				renspadv(&mysprite,bubbles[i].x,bubbles[i].y,3);
 				bubbles[i].life++;
 			}
 			else{

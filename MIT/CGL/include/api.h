@@ -836,18 +836,18 @@ void renspadv(sprite* s, int x, int y, uint flips){
 	int startsx=0, startsy=0, endsx=s->w, endsy=s->h, stepsx = 1, stepsy = 1;
 	// int tx = 0, ty = 0;
 	if(flips & 1){ //Flip horizontal
-		startsx = s->w;
-		endsx = 0;
+		startsx = s->w-1;
+		endsx = -1;
 		stepsx = -1;
 	}
 	if(flips & 2){ //Flip horizontal
-		startsy = s->h;
-		endsy = 0;
+		startsy = s->h-1;
+		endsy = -1;
 		stepsy = -1;
 	}
-	for(int x = startsx, tx = 0; x < endsx; x+=stepsx, tx++)
-	for(int y = startsy, ty = 0; y < endsy; y+=stepsy, ty++)
-		spritedata[tx+ty*s->w] = s->d[x + y*s->w];
+	for(int x = startsx, tx = 0; x != endsx; x+=stepsx, tx++)
+	for(int y = startsy, ty = 0; y != endsy; y+=stepsy, ty++)
+		spritedata[tx+ty*s->w] = ((uint*)s->d)[x + y*s->w];
 	rensp(&temp,x,y);
 }
 void rensp(sprite* s, int x, int y){
