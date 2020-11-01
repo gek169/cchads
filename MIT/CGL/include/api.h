@@ -840,10 +840,20 @@ void rensp(sprite* s, int x, int y){
 	for(int sy = offy; (sy < s->h) && (y+sy < surf->h); sy++)
 	{
 		int tx = sx+x;int ty = sy+y;
-		char* datum = surf->pixels; 
+		unsigned char* datum = surf->pixels; 
 		datum += (tx + ty * surf->w)*4;
-		if(s->d[(sx + sy * s->w)*4+A_] > 128)
-		*((uint*)datum) = *((uint*)(s->d+(sx + sy * s->w)*4));
+		uint dest = *((uint*)datum); 
+		unsigned char destA = *(datum+A_);
+		uint src = *((uint*)(s->d+(sx + sy * s->w)*4)); 
+		unsigned char srcA = *((s->d+(sx + sy * s->w)*4)+A_);
+		uint result;
+		float srcmult = srcA/255.0f;
+		float destmult = (255-srcA)/255.0f;
+		((unsigned char*)&result)[R_] = ((unsigned char*)&src)[R_] * srcmult + ((unsigned char*)&dest)[R_] * destmult;
+		((unsigned char*)&result)[G_] = ((unsigned char*)&src)[G_] * srcmult + ((unsigned char*)&dest)[G_] * destmult;
+		((unsigned char*)&result)[B_] = ((unsigned char*)&src)[B_] * srcmult + ((unsigned char*)&dest)[B_] * destmult;
+		((unsigned char*)&result)[A_] = destA;
+		*((uint*)datum) = result;
 	}
 }
 //Used for tinting pure black and white sprites to the correct rgb.
