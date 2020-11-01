@@ -157,6 +157,7 @@ void tri2dND(int x0, int y0,
 //Renders 3D models using lines.
 void linemodel(pmod* mod, uchar r, uchar g, uchar b);
 void rensp(sprite* s, int x, int y);
+void renspadv(sprite* s, int x, int y, uint flips);
 //Used for tinting pure black and white sprites to the correct rgb.
 //Used for the text renderer.
 void rensptint(sprite* s, int x, int y,uchar r, uchar g, uchar b);
@@ -827,7 +828,28 @@ void linemodel(pmod* mod, uchar r, uchar g, uchar b){
 				r,g,b);
 	}
 }
-
+void renspadv(sprite* s, int x, int y, uint flips){
+	sprite temp;
+	temp = *s;
+	unsigned int spritedata[s->w * s->h];
+	temp.d = (unsigned char*)spritedata;
+	int startsx=0, startsy=0, endsx=s->w, endsy=s->h, stepsx = 1, stepsy = 1;
+	// int tx = 0, ty = 0;
+	if(flips & 1){ //Flip horizontal
+		startsx = s->w;
+		endsx = 0;
+		stepsx = -1;
+	}
+	if(flips & 2){ //Flip horizontal
+		startsy = s->h;
+		endsy = 0;
+		stepsy = -1;
+	}
+	for(int x = startsx, tx = 0; x < endsx; x+=stepsx, tx++)
+	for(int y = startsy, ty = 0; y < endsy; y+=stepsy, ty++)
+		spritedata[tx+ty*s->w] = s->d[x + y*s->w];
+	rensp(&temp,x,y);
+}
 void rensp(sprite* s, int x, int y){
 	if(	x > surf->w || 
 		y > surf->h || 
