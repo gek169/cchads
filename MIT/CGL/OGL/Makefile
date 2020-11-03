@@ -2,7 +2,7 @@
 CC=gcc
 CFLAGS=-I.
 ALL_T= gl3w.o shader.o gl_helpers.o immtri camera model
-OPTIMIZATION_LEVEL=-O3 -msse3
+OPTIMIZATION_LEVEL=-O3
 SDL2_LIBS= -lSDL2 -lSDL2_mixer -lSDL2main
 ifeq ($(OS),Windows_NT)
 OTHER_LIBS= -lopengl32

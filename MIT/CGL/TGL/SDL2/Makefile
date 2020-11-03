@@ -2,7 +2,7 @@
 CC=gcc
 CFLAGS=-std=c99
 ALL_T= gl_helpers.o immtri camera model
-OPTIMIZATION_LEVEL=-O3 -msse3
+OPTIMIZATION_LEVEL=-O3
 #-fsanitize=undefined
 SDL2_LIBS= -lSDL2 -lSDL2_mixer -lSDL2main
 OTHER_LIBS= -L../ -lTinyGL

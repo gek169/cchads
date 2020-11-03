@@ -46,7 +46,7 @@ passgen:
 sdf_tracer:
 	$(CC) sdf_tracer.c -o sdf_tracer -lm -std=c99 -O3
 s3lhelloworld:
-	$(CC) s3lhelloworld.c -o s3lhelloworld -lm -std=c99 -O3 -msse4
+	$(CC) s3lhelloworld.c -o s3lhelloworld -lm -std=c99 -O3
 threaddemo:
 	$(CC) threaddemo.c -o threaddemo -O2 -lm -lpthread 
 cgl:
