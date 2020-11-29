@@ -52,6 +52,20 @@ const char* bubblespr = "\n"
 "``   K    ``\n"
 " ``  K  ```\n"
 "   `````";//Notice how the last line does not end in \n
+const char* sprite2 = ""
+"                                           \n"
+"      >>>>>                    >>>>>       \n"
+"     >>   >>                  >>   >>      \n"
+"     >>   >>                  >>   >>      \n"
+"      >>>>>         >          >>>>>       \n"
+"                     >                     \n"
+"                      >                    \n"
+"     >            >>>>>>         >         \n"
+"      >>                       >>          \n"
+"        >>>>>>>>>>>>>>>>>>>>>>>            \n"
+"                                           \n"
+"                                           "
+;
 
 float t = 0.0;
 float m = 20;
@@ -90,10 +104,12 @@ int main()
     }
     sprite floor;
     sprite wall;
+    sprite mysecond;
     lspr(&floor,"floor1.png");
     lspr(&wall,"wall1.png");
 	initspfromstr(&mysprite,bubblespr,&mypal);
 	initspfromstr(&mybackspr,backspr,&mypal);
+	initspfromstr(&mysecond,sprite2,&mypal);
 	initFont("GKBAF16x16.bmp");
 	init();//ainit();
 	cWin("Sprite Rendering!",300,300,WIDTH * RATIO,HEIGHT * RATIO,0);
@@ -105,11 +121,12 @@ int main()
 		t+=0.016666;
 		resetdbuff(0);
 		blitback(&mybackspr,sppos[0],sppos[1]);
-		//rensp(&mysprite,sppos[0],sppos[1]);
+		
 		//m = 20;
 		hshift(wavy);
 		//m = 40;
 		vshift(wavy2);
+		rensp(&mysecond,sppos[0],sppos[1]);
 		for(int i = 0; i < NBUB; i++){
 			if(bubbles[i].life < BUBLIFE && bubbles[i].y > -mysprite.h){
 				bubbles[i].vx += (randf()-0.5)*0.2;
