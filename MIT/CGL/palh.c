@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<stdlib.h>
 /*
 PALETTE HELPER
 This program assists in the usage of the standard palette
@@ -15,8 +16,11 @@ The space character + 1 is the first "real" color
 The R,G, and B base-4 "digits" are each multiplied by 85 to get the "actual"
 RGB values to be displayed on the screen.
 */
-int main(){
-	for(int i = 0; i < 4; i++)
+int main(int argc, char** argv){
+	int pal[3];
+	for(int i = 1; i < argc; i++)
+		pal[i-1]=atoi(argv[i]);
+	//for(int i = 0; i < 4; i++)
 	//                         BASE     R        G          B
-		printf("\n%d = %c\n",i,' '+1 +	0*16	+0*4	+	i); //Edit the marked numbers for RGB values.
+		printf("\n%d,%d,%d = %c\n",pal[0],pal[1],pal[2],' '+1 +	pal[0]*16	+pal[1]*4	+	pal[2]); //Edit the marked numbers for RGB values.
 }
