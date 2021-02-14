@@ -8,7 +8,7 @@ ALL_T= bubble colored_text noise gif polish\
 	 gmap mandel noisebox wall passgen sdf_tracer objparse s3lhelloworld
 UNAPPROVED_T= sudoku threaddemo
 SUB_APPROVED= lua
-OTHER_SUB= cgl omp
+OTHER_SUB= omp
 all: $(ALL_T) $(SUB_APPROVED)
 	@echo "Note: The following targets are not approved by the makefile maintainer due to unusual deps:"
 	@echo $(OTHER_SUB) $(UNAPPROVED_T)
@@ -16,7 +16,7 @@ all: $(ALL_T) $(SUB_APPROVED)
 clean:
 	rm -f $(ALL_T) $(UNAPPROVED_T)
 	rm -f *.exe
-	cd CGL && $(MAKE) clean && cd ..
+#	cd CGL && $(MAKE) clean && cd ..
 	cd lua && $(MAKE) clean && cd ..
 	cd OMP && $(MAKE) clean && cd ..
 bubble:
