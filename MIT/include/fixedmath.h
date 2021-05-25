@@ -11,8 +11,7 @@ typedef int64_t ltfixed; //the size exactly double that of the fixed size.
 #define MULFIXEDHIGHPREC(a,b) ((fixed)(((ltfixed)a * (ltfixed)b)>>FIXBFRAC))
 #define MULFIXED MULFIXEDHIGHPREC
 #define DIVFIXEDHIGHPREC(a,b) (((ltfixed)a<<FIXBFRAC)/(b))
-//#define DIVFIXEDLOWPREC(a,b) ((a<<(FIXBFRAC/2))/(b<<(FIXBFRAC/2)))
-//#define DIVFIXEDMEDPREC(a,b) (((a<<(FIXBFRAC/4))/(b<<(FIXBFRAC/4)))<<(FIXBFRAC/2))
+//#define DIVFIXEDMEDPREC(a,b) ((a<<(FIXBFRAC/2))/(b<<(FIXBFRAC/2)))
 #define DIVFIXED DIVFIXEDHIGHPREC
 #define FIXEDTODOUBLE(a) ((double)a / (double)(1<<FIXBFRAC))
 #define DOUBLETOFIXED(a) ((fixed)(a * (double)(1<<FIXBFRAC)))
