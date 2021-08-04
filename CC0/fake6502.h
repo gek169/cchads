@@ -125,11 +125,11 @@ typedef unsigned int uint32;
 #define UNDOCUMENTED
 
 /*
-	when this is defined, the binary-coded decimal (BCD)
-	status flag is not honored by ADC and SBC. the 2A03
-	CPU in the Nintendo Entertainment System does not
-	support BCD operation.
-	#define NES_CPU
+* #define NES_CPU
+* when this is defined, the binary-coded decimal (BCD)
+* status flag is not honored by ADC and SBC. the 2A03
+* CPU in the Nintendo Entertainment System does not
+* support BCD operation.
 */
 
 
@@ -184,38 +184,46 @@ typedef unsigned int uint32;
 }
 
 
+#ifdef FAKE6502_NOT_STATIC
 /*6502 CPU registers*/
+ushort pc;
+uint8 sp, a, x, y, status;
+/*helper variables*/
+uint32 instructions = 0; 
+uint32 clockticks6502 = 0, clockgoal6502 = 0;
+ushort oldpc, ea, reladdr, value, result;
+uint8 opcode, oldstatus;
+#else
 static ushort pc;
 static uint8 sp, a, x, y, status;
-/*helper variables*/
 static uint32 instructions = 0; 
 static uint32 clockticks6502 = 0, clockgoal6502 = 0;
 static ushort oldpc, ea, reladdr, value, result;
 static uint8 opcode, oldstatus;
-
+#endif
 /*externally supplied functions*/
 extern uint8 read6502(ushort address);
 extern void write6502(ushort address, uint8 value);
 
 /*a few general functions used by various other functions*/
-void push16(ushort pushval) {
+void push_6502_16(ushort pushval) {
     write6502(BASE_STACK + sp, (pushval >> 8) & 0xFF);
     write6502(BASE_STACK + ((sp - 1) & 0xFF), pushval & 0xFF);
     sp -= 2;
 }
 
-void push8(uint8 pushval) {
+void push_6502_8(uint8 pushval) {
     write6502(BASE_STACK + sp--, pushval);
 }
 
-ushort pull16() {
+ushort pull_6502_16() {
     ushort temp16;
     temp16 = read6502(BASE_STACK + ((sp + 1) & 0xFF)) | ((ushort)read6502(BASE_STACK + ((sp + 2) & 0xFF)) << 8);
     sp += 2;
     return(temp16);
 }
 
-uint8 pull8() {
+uint8 pull_6502_8() {
     return (read6502(BASE_STACK + ++sp));
 }
 
@@ -450,10 +458,10 @@ static void bpl() {
     }
 }
 
-static void brk() {
+static void brk_6502() {
     pc++;
-    push16(pc); /*push next instruction address onto stack*/
-    push8(status | FLAG_BREAK); /*push CPU status to stack*/
+    push_6502_16(pc); /*push next instruction address onto stack*/
+    push_6502_8(status | FLAG_BREAK); /*push CPU status to stack*/
     setinterrupt(); /*set interrupt flag*/
     pc = (ushort)read6502(0xFFFE) | ((ushort)read6502(0xFFFF) << 8);
 }
@@ -590,7 +598,7 @@ static void jmp() {
 }
 
 static void jsr() {
-    push16(pc - 1);
+    push_6502_16(pc - 1);
     pc = ea;
 }
 
@@ -658,22 +666,22 @@ static void ora() {
 }
 
 static void pha() {
-    push8(a);
+    push_6502_8(a);
 }
 
 static void php() {
-    push8(status | FLAG_BREAK);
+    push_6502_8(status | FLAG_BREAK);
 }
 
 static void pla() {
-    a = pull8();
+    a = pull_6502_8();
    
     zerocalc(a);
     signcalc(a);
 }
 
 static void plp() {
-    status = pull8() | FLAG_CONSTANT;
+    status = pull_6502_8() | FLAG_CONSTANT;
 }
 
 static void rol() {
@@ -700,13 +708,13 @@ static void ror() {
 }
 
 static void rti() {
-    status = pull8();
-    value = pull16();
+    status = pull_6502_8();
+    value = pull_6502_16();
     pc = value;
 }
 
 static void rts() {
-    value = pull16();
+    value = pull_6502_16();
     pc = value + 1;
 }
 
@@ -886,7 +894,7 @@ static void (*addrtable[256])() = {
 
 static void (*optable[256])() = {
 /*        |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |      */
-/* 0 */      brk,  ora,  nop,  slo,  nop,  ora,  asl,  slo,  php,  ora,  asl,  nop,  nop,  ora,  asl,  slo, /* 0 */
+/* 0 */      brk_6502,  ora,  nop,  slo,  nop,  ora,  asl,  slo,  php,  ora,  asl,  nop,  nop,  ora,  asl,  slo, /* 0 */
 /* 1 */      bpl,  ora,  nop,  slo,  nop,  ora,  asl,  slo,  clc,  ora,  nop,  slo,  nop,  ora,  asl,  slo, /* 1 */
 /* 2 */      jsr,  and,  nop,  rla,  bit,  and,  rol,  rla,  plp,  and,  rol,  nop,  bit,  and,  rol,  rla, /* 2 */
 /* 3 */      bmi,  and,  nop,  rla,  nop,  and,  rol,  rla,  sec,  and,  nop,  rla,  nop,  and,  rol,  rla, /* 3 */
@@ -926,15 +934,15 @@ static const uint32 ticktable[256] = {
 
 
 void nmi6502() {
-    push16(pc);
-    push8(status);
+    push_6502_16(pc);
+    push_6502_8(status);
     status |= FLAG_INTERRUPT;
     pc = (ushort)read6502(0xFFFA) | ((ushort)read6502(0xFFFB) << 8);
 }
 
 void irq6502() {
-    push16(pc);
-    push8(status);
+    push_6502_16(pc);
+    push_6502_8(status);
     status |= FLAG_INTERRUPT;
     pc = (ushort)read6502(0xFFFE) | ((ushort)read6502(0xFFFF) << 8);
 }
