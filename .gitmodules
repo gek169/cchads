@@ -4,3 +4,6 @@
 [submodule "GPL/MyLittlez80"]
 	path = GPL/MyLittlez80
 	url = https://github.com/C-Chads/MyLittlez80
+[submodule "MIT/tinygl"]
+	path = MIT/tinygl
+	url = https://github.com/C-Chads/tinygl.git
