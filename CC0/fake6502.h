@@ -227,13 +227,21 @@ uint8 pull_6502_8() {
     return (read6502(BASE_STACK + ++sp));
 }
 
+static ushort mem_6502_read16(ushort addr) {
+    return ((ushort)read6502(addr) |
+            ((ushort)read6502(addr + 1) << 8));
+}
+
 void reset6502() {
-    pc = (ushort)read6502(0xFFFC) | ((ushort)read6502(0xFFFD) << 8);
-    a = 0;
-    x = 0;
-    y = 0;
-    sp = 0xFD;
-    status |= FLAG_CONSTANT;
+    read6502(0x00ff);
+    read6502(0x00ff);
+    read6502(0x00ff);
+    read6502(0x0100);
+    read6502(0x01ff);
+    read6502(0x01fe);
+    pc = mem_6502_read16( 0xfffc);
+    sp = 0xfd;
+    status |= FLAG_CONSTANT | FLAG_INTERRUPT;
 }
 
 
@@ -330,8 +338,11 @@ static void indy() { /* (indirect),Y*/
 }
 
 static ushort getvalue() {
-    if (addrtable[opcode] == acc) return((ushort)a);
-        else return((ushort)read6502(ea));
+
+    if (addrtable[opcode] == acc) 
+    	return((ushort)a);
+	else 
+    	return((ushort)read6502(ea));
 }
 
 static ushort getvalue16() {
@@ -355,24 +366,49 @@ static void adc() {
     overflowcalc(result, a, value);
     signcalc(result);
     
-    #ifndef NES_CPU
+#ifndef NES_CPU
     if (status & FLAG_DECIMAL) {
         clearcarry();
-        
-        if ((a & 0x0F) > 0x09) {
-            a += 0x06;
+        if ((result & 0x0F) > 0x09) {
+            result += 0x06;
         }
-        if ((a & 0xF0) > 0x90) {
-            a += 0x60;
+        if ((result & 0xF0) > 0x90) {
+            result += 0x60;
             setcarry();
         }
-        
         clockticks6502++;
     }
-    #endif
-   
+#endif
     saveaccum(result);
 }
+
+
+/*
+    uint16_t result = a + b + (uint16_t)(carry ? 1 : 0);
+
+    carrycalc(c, result);
+    zerocalc(c, result);
+    overflowcalc(c, result, a, b);
+    signcalc(c, result);
+
+#ifdef DECIMALMODE
+    if (c->flags & FLAG_DECIMAL) {
+        clearcarry(c);
+
+        if ((result & 0x0F) > 0x09) {
+            result += 0x06;
+        }
+        if ((result & 0xF0) > 0x90) {
+            result += 0x60;
+            setcarry(c);
+        }
+
+        c->clockticks++;
+    }
+#endif
+    return result;
+
+*/
 
 static void and() {
     penaltyop = 1;
@@ -720,30 +756,28 @@ static void rts() {
 
 static void sbc() {
     penaltyop = 1;
-    value = getvalue() ^ 0x00FF;
-    result = (ushort)a + value + (ushort)(status & FLAG_CARRY);
-   
+    value = getvalue();
+    result = ((ushort)a) - value - (ushort)(status & FLAG_CARRY);
+
     carrycalc(result);
     zerocalc(result);
     overflowcalc(result, a, value);
     signcalc(result);
 
-    #ifndef NES_CPU
+#ifndef NES_CPU
     if (status & FLAG_DECIMAL) {
         clearcarry();
-        
-        a -= 0x66;
-        if ((a & 0x0F) > 0x09) {
-            a += 0x06;
+        /*result -= 0x66;*/
+        if ((result & 0x0F) > 0x09) {
+            result -= 0x06;
         }
-        if ((a & 0xF0) > 0x90) {
-            a += 0x60;
+        if ((result & 0xF0) > 0x90) {
+            result -= 0x60;
             setcarry();
         }
-        
         clockticks6502++;
     }
-    #endif
+#endif
    
     saveaccum(result);
 }
@@ -941,10 +975,19 @@ void nmi6502() {
 }
 
 void irq6502() {
+	/*
     push_6502_16(pc);
     push_6502_8(status);
     status |= FLAG_INTERRUPT;
     pc = (ushort)read6502(0xFFFE) | ((ushort)read6502(0xFFFF) << 8);
+    */
+    
+   if ((status & FLAG_INTERRUPT) == 0) {
+        push_6502_16(pc);
+        push_6502_8(status & ~FLAG_BREAK);
+        status |= FLAG_INTERRUPT;
+        pc = mem_6502_read16(0xfffe);
+    }
 }
 
 uint8 callexternal = 0;
