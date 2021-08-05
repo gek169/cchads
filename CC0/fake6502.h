@@ -1,12 +1,6 @@
-/* Fake6502 CPU emulator core v1.2 *******************
- * Current Maintainer: David MHS Webster             *
- * https://github.com/gek169                         *
- * Original Author: Mike Chambers                    *
- * License: CC0/Public Domain                        *
+/* Fake6502 CPU emulator core v1.1 *******************
+ *         Author:Mike Chambers (miker00lz@gmail.com)*
  *****************************************************
- * v1.2 - Fixed decimal mode along with several      *
- * other oddities that don't match up with tests.    *
- *                                                   *
  * v1.1 - Small bugfix in BIT opcode, but it was the *
  *        difference between a few games in my NES   *
  *        emulator working and being broken!         *
@@ -150,22 +144,22 @@ typedef unsigned int uint32;
 
 #define BASE_STACK     0x100
 
-#define saveaccum(n) a_6502 = (uint8)((n) & 0x00FF)
+#define saveaccum(n) a = (uint8)((n) & 0x00FF)
 
 
 /*flag modifier macros*/
-#define setcarry() status_6502 |= FLAG_CARRY
-#define clearcarry() status_6502 &= (~FLAG_CARRY)
-#define setzero() status_6502 |= FLAG_ZERO
-#define clearzero() status_6502 &= (~FLAG_ZERO)
-#define setinterrupt() status_6502 |= FLAG_INTERRUPT
-#define clearinterrupt() status_6502 &= (~FLAG_INTERRUPT)
-#define setdecimal() status_6502 |= FLAG_DECIMAL
-#define cleardecimal() status_6502 &= (~FLAG_DECIMAL)
-#define setoverflow() status_6502 |= FLAG_OVERFLOW
-#define clearoverflow() status_6502 &= (~FLAG_OVERFLOW)
-#define setsign() status_6502 |= FLAG_SIGN
-#define clearsign() status_6502 &= (~FLAG_SIGN)
+#define setcarry() status |= FLAG_CARRY
+#define clearcarry() status &= (~FLAG_CARRY)
+#define setzero() status |= FLAG_ZERO
+#define clearzero() status &= (~FLAG_ZERO)
+#define setinterrupt() status |= FLAG_INTERRUPT
+#define clearinterrupt() status &= (~FLAG_INTERRUPT)
+#define setdecimal() status |= FLAG_DECIMAL
+#define cleardecimal() status &= (~FLAG_DECIMAL)
+#define setoverflow() status |= FLAG_OVERFLOW
+#define clearoverflow() status &= (~FLAG_OVERFLOW)
+#define setsign() status |= FLAG_SIGN
+#define clearsign() status &= (~FLAG_SIGN)
 
 
 /*flag calculation macros*/
@@ -192,20 +186,20 @@ typedef unsigned int uint32;
 
 #ifdef FAKE6502_NOT_STATIC
 /*6502 CPU registers*/
-ushort pc_6502;
-uint8 sp_6502, a_6502, x_6502, y_6502, status_6502;
+ushort pc;
+uint8 sp, a, x, y, status;
 /*helper variables*/
-uint32 instructions6502 = 0; 
+uint32 instructions = 0; 
 uint32 clockticks6502 = 0, clockgoal6502 = 0;
-ushort oldpc_6502, ea_6502, reladdr_6502, value_6502, result_6502;
-uint8 opcode6502, oldstatus6502;
+ushort oldpc, ea, reladdr, value, result;
+uint8 opcode, oldstatus;
 #else
-static ushort pc_6502;
-static uint8 sp_6502, a_6502, x_6502, y_6502, status_6502;
-static uint32 instructions6502 = 0; 
+static ushort pc;
+static uint8 sp, a, x, y, status;
+static uint32 instructions = 0; 
 static uint32 clockticks6502 = 0, clockgoal6502 = 0;
-static ushort oldpc_6502, ea_6502, reladdr_6502, value_6502, result_6502;
-static uint8 opcode6502, oldstatus6502;
+static ushort oldpc, ea, reladdr, value, result;
+static uint8 opcode, oldstatus;
 #endif
 /*externally supplied functions*/
 extern uint8 read6502(ushort address);
@@ -213,25 +207,24 @@ extern void write6502(ushort address, uint8 value);
 
 /*a few general functions used by various other functions*/
 void push_6502_16(ushort pushval) {
-    write6502(BASE_STACK + sp_6502, (pushval >> 8) & 0xFF);
-    write6502(BASE_STACK + ((sp_6502 - 1) & 0xFF), pushval & 0xFF);
-    sp_6502 -= 2;
+    write6502(BASE_STACK + sp, (pushval >> 8) & 0xFF);
+    write6502(BASE_STACK + ((sp - 1) & 0xFF), pushval & 0xFF);
+    sp -= 2;
 }
 
 void push_6502_8(uint8 pushval) {
-    write6502(BASE_STACK + sp_6502--, pushval);
+    write6502(BASE_STACK + sp--, pushval);
 }
 
 ushort pull_6502_16() {
     ushort temp16;
-    temp16 = read6502(BASE_STACK + ((sp_6502 + 1) & 0xFF)) | 
-    		((ushort)read6502(BASE_STACK + ((sp_6502 + 2) & 0xFF)) << 8);
-    sp_6502 += 2;
+    temp16 = read6502(BASE_STACK + ((sp + 1) & 0xFF)) | ((ushort)read6502(BASE_STACK + ((sp + 2) & 0xFF)) << 8);
+    sp += 2;
     return(temp16);
 }
 
 uint8 pull_6502_8() {
-    return (read6502(BASE_STACK + ++sp_6502));
+    return (read6502(BASE_STACK + ++sp));
 }
 
 static ushort mem_6502_read16(ushort addr) {
@@ -240,15 +233,23 @@ static ushort mem_6502_read16(ushort addr) {
 }
 
 void reset6502() {
+	/*
+	    pc = (ushort)read6502(0xFFFC) | ((ushort)read6502(0xFFFD) << 8);
+	    a = 0;
+	    x = 0;
+	    y = 0;
+	    sp = 0xFD;
+	    status |= FLAG_CONSTANT;
+    */
     read6502(0x00ff);
     read6502(0x00ff);
     read6502(0x00ff);
     read6502(0x0100);
     read6502(0x01ff);
     read6502(0x01fe);
-    pc_6502 = mem_6502_read16( 0xfffc);
-    sp_6502 = 0xfd;
-    status_6502 |= FLAG_CONSTANT | FLAG_INTERRUPT;
+    pc = mem_6502_read16(0xfffc);
+    sp = 0xfd;
+    status |= FLAG_CONSTANT | FLAG_INTERRUPT;
 }
 
 
@@ -266,282 +267,246 @@ static void acc() {
 
 /*addressing mode functions, calculates effective addresses*/
 static void imm() { 
-    ea_6502 = pc_6502++;
+    ea = pc++;
 }
 
 static void zp() { /*zero-page*/
-    ea_6502 = (ushort)read6502((ushort)pc_6502++);
+    ea = (ushort)read6502((ushort)pc++);
 }
 
 static void zpx() { /*zero-page,X*/
-    ea_6502 = ((ushort)read6502((ushort)pc_6502++) + (ushort)x_6502) & 0xFF; /*zero-page wraparound*/
+    ea = ((ushort)read6502((ushort)pc++) + (ushort)x) & 0xFF; /*zero-page wraparound*/
 }
 
 static void zpy() { /*zero-page,Y*/
-    ea_6502 = ((ushort)read6502((ushort)pc_6502++) + (ushort)y_6502) & 0xFF; /*zero-page wraparound*/
+    ea = ((ushort)read6502((ushort)pc++) + (ushort)y) & 0xFF; /*zero-page wraparound*/
 }
 
 static void rel() { /*relative for branch ops (8-bit immediate value, sign-extended)*/
-    reladdr_6502 = (ushort)read6502(pc_6502++);
-    if (reladdr_6502 & 0x80) reladdr_6502 |= 0xFF00;
+    reladdr = (ushort)read6502(pc++);
+    if (reladdr & 0x80) reladdr |= 0xFF00;
 }
 
 static void abso() { /*absolute*/
-    ea_6502 = (ushort)read6502(pc_6502) | ((ushort)read6502(pc_6502+1) << 8);
-    pc_6502 += 2;
+    ea = (ushort)read6502(pc) | ((ushort)read6502(pc+1) << 8);
+    pc += 2;
 }
 
 static void absx() { /*absolute,X*/
     ushort startpage;
-    ea_6502 = ((ushort)read6502(pc_6502) | ((ushort)read6502(pc_6502+1) << 8));
-    startpage = ea_6502 & 0xFF00;
-    ea_6502 += (ushort)x_6502;
+    ea = ((ushort)read6502(pc) | ((ushort)read6502(pc+1) << 8));
+    startpage = ea & 0xFF00;
+    ea += (ushort)x;
 
-    if (startpage != (ea_6502 & 0xFF00)) { /*one cycle penlty for page-crossing on some opcodes*/
+    if (startpage != (ea & 0xFF00)) { /*one cycle penlty for page-crossing on some opcodes*/
         penaltyaddr = 1;
     }
 
-    pc_6502 += 2;
+    pc += 2;
 }
 
 static void absy() { /*absolute,Y*/
     ushort startpage;
-    ea_6502 = ((ushort)read6502(pc_6502) | ((ushort)read6502(pc_6502+1) << 8));
-    startpage = ea_6502 & 0xFF00;
-    ea_6502 += (ushort)y_6502;
+    ea = ((ushort)read6502(pc) | ((ushort)read6502(pc+1) << 8));
+    startpage = ea & 0xFF00;
+    ea += (ushort)y;
 
-    if (startpage != (ea_6502 & 0xFF00)) { /*one cycle penlty for page-crossing on some opcodes*/
+    if (startpage != (ea & 0xFF00)) { /*one cycle penlty for page-crossing on some opcodes*/
         penaltyaddr = 1;
     }
 
-    pc_6502 += 2;
+    pc += 2;
 }
 
-
+static void ind() { /*indirect*/
+    ushort eahelp, eahelp2;
+    eahelp = (ushort)read6502(pc) | (ushort)((ushort)read6502(pc+1) << 8);
+    eahelp2 = (eahelp & 0xFF00) | ((eahelp + 1) & 0x00FF); /*replicate 6502 page-boundary wraparound bug*/
+    ea = (ushort)read6502(eahelp) | ((ushort)read6502(eahelp2) << 8);
+    pc += 2;
+}
 
 static void indx() { /* (indirect,X)*/
     ushort eahelp;
-    eahelp = (ushort)(((ushort)read6502(pc_6502++) + (ushort)x_6502) & 0xFF); /*zero-page wraparound for table pointer*/
-    ea_6502 = (ushort)read6502(eahelp & 0x00FF) | ((ushort)read6502((eahelp+1) & 0x00FF) << 8);
+    eahelp = (ushort)(((ushort)read6502(pc++) + (ushort)x) & 0xFF); /*zero-page wraparound for table pointer*/
+    ea = (ushort)read6502(eahelp & 0x00FF) | ((ushort)read6502((eahelp+1) & 0x00FF) << 8);
 }
-
-#ifndef CMOS6502
-static void ind() { /*indirect addressing on the normal NMOS 6502*/
-    ushort eahelp, eahelp2;
-    eahelp = mem_6502_read16(pc_6502);
-    eahelp2 =
-        (eahelp & 0xFF00) |
-        ((eahelp + 1) & 0x00FF);
-	ea_6502 =
-		(ushort)read6502(eahelp) | 
-		((ushort)read6502(eahelp2) << 8);
-    pc_6502 += 2;
-}
-#else
-static void ind() { /*Fixed version from the CMOS chips.*/
-    ushort eahelp;
-    eahelp = mem_6502_read16(pc_6502);
-    if ((eahelp&0x00ff)==0xff) clockticks6502++;
-    ea_6502 = mem_6502_read16(eahelp);
-    pc_6502 += 2;
-}
-#endif
-
 
 static void indy() { /* (indirect),Y*/
     ushort eahelp, eahelp2, startpage;
-    eahelp = (ushort)read6502(pc_6502++);
+    eahelp = (ushort)read6502(pc++);
     eahelp2 = (eahelp & 0xFF00) | ((eahelp + 1) & 0x00FF); /*zero-page wraparound*/
-    ea_6502 = (ushort)read6502(eahelp) | ((ushort)read6502(eahelp2) << 8);
-    startpage = ea_6502 & 0xFF00;
-    ea_6502 += (ushort)y_6502;
+    ea = (ushort)read6502(eahelp) | ((ushort)read6502(eahelp2) << 8);
+    startpage = ea & 0xFF00;
+    ea += (ushort)y;
 
-    if (startpage != (ea_6502 & 0xFF00)) { /*one cycle penlty for page-crossing on some opcodes*/
+    if (startpage != (ea & 0xFF00)) { /*one cycle penlty for page-crossing on some opcodes*/
         penaltyaddr = 1;
     }
 }
 
 static ushort getvalue() {
-
-    if (addrtable[opcode6502] == acc) 
-    	return((ushort)a_6502);
-	else 
-    	return((ushort)read6502(ea_6502));
+    if (addrtable[opcode] == acc) return((ushort)a);
+        else return((ushort)read6502(ea));
 }
 
 static ushort getvalue16() {
-    return((ushort)read6502(ea_6502) | ((ushort)read6502(ea_6502+1) << 8));
+    return((ushort)read6502(ea) | ((ushort)read6502(ea+1) << 8));
 }
 
 static void putvalue(ushort saveval) {
-    if (addrtable[opcode6502] == acc) 
-    	a_6502 = (uint8)(saveval & 0x00FF);
-    else 
-    	write6502(ea_6502, (saveval & 0x00FF));
+    if (addrtable[opcode] == acc) a = (uint8)(saveval & 0x00FF);
+        else write6502(ea, (saveval & 0x00FF));
 }
 
 
 /*instruction handler functions*/
 static void adc() {
     penaltyop = 1;
-    value_6502 = getvalue();
-    result_6502 = (ushort)a_6502 + value_6502 + (ushort)(status_6502 & FLAG_CARRY);
+    value = getvalue();
+    result = (ushort)a + value + (ushort)(status & FLAG_CARRY);
    
-    carrycalc(result_6502);
-    zerocalc(result_6502);
-    overflowcalc(result_6502, a_6502, value_6502);
-    signcalc(result_6502);
+    carrycalc(result);
+    zerocalc(result);
+    overflowcalc(result, a, value);
+    signcalc(result);
     
 #ifndef NES_CPU
-    if (status_6502 & FLAG_DECIMAL) {
+/*
+    if (status & FLAG_DECIMAL) {
         clearcarry();
-        if ((result_6502 & 0x0F) > 0x09) {
-            result_6502 += 0x06;
+        if ((a & 0x0F) > 0x09) {
+            a += 0x06;
         }
-        if ((result_6502 & 0xF0) > 0x90) {
-            result_6502 += 0x60;
+        if ((a & 0xF0) > 0x90) {
+            a += 0x60;
             setcarry();
         }
         clockticks6502++;
     }
-#endif
-    saveaccum(result_6502);
-}
-
-
-/*
-    uint16_t result = a + b + (uint16_t)(carry ? 1 : 0);
-
-    carrycalc(c, result);
-    zerocalc(c, result);
-    overflowcalc(c, result, a, b);
-    signcalc(c, result);
-
-#ifdef DECIMALMODE
-    if (c->flags & FLAG_DECIMAL) {
-        clearcarry(c);
-
+*/
+    if (status & FLAG_DECIMAL) {
+        clearcarry();
         if ((result & 0x0F) > 0x09) {
             result += 0x06;
         }
         if ((result & 0xF0) > 0x90) {
             result += 0x60;
-            setcarry(c);
+            setcarry();
         }
-
-        c->clockticks++;
+        clockticks6502++;
     }
 #endif
-    return result;
-
-*/
+   
+    saveaccum(result);
+}
 
 static void and() {
     penaltyop = 1;
-    value_6502 = getvalue();
-    result_6502 = (ushort)a_6502 & value_6502;
+    value = getvalue();
+    result = (ushort)a & value;
    
-    zerocalc(result_6502);
-    signcalc(result_6502);
+    zerocalc(result);
+    signcalc(result);
    
-    saveaccum(result_6502);
+    saveaccum(result);
 }
 
 static void asl() {
-    value_6502 = getvalue();
-    result_6502 = value_6502 << 1;
+    value = getvalue();
+    result = value << 1;
 
-    carrycalc(result_6502);
-    zerocalc(result_6502);
-    signcalc(result_6502);
+    carrycalc(result);
+    zerocalc(result);
+    signcalc(result);
    
-    putvalue(result_6502);
+    putvalue(result);
 }
 
 static void bcc() {
-    if ((status_6502 & FLAG_CARRY) == 0) {
-        oldpc_6502 = pc_6502;
-        pc_6502 += reladdr_6502;
-        if ((oldpc_6502 & 0xFF00) != (pc_6502 & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
+    if ((status & FLAG_CARRY) == 0) {
+        oldpc = pc;
+        pc += reladdr;
+        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
             else clockticks6502++;
     }
 }
 
 static void bcs() {
-    if ((status_6502 & FLAG_CARRY) == FLAG_CARRY) {
-        oldpc_6502 = pc_6502;
-        pc_6502 += reladdr_6502;
-        if ((oldpc_6502 & 0xFF00) != (pc_6502 & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
+    if ((status & FLAG_CARRY) == FLAG_CARRY) {
+        oldpc = pc;
+        pc += reladdr;
+        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
             else clockticks6502++;
     }
 }
 
 static void beq() {
-    if ((status_6502 & FLAG_ZERO) == FLAG_ZERO) {
-        oldpc_6502 = pc_6502;
-        pc_6502 += reladdr_6502;
-        if ((oldpc_6502 & 0xFF00) != (pc_6502 & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
+    if ((status & FLAG_ZERO) == FLAG_ZERO) {
+        oldpc = pc;
+        pc += reladdr;
+        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
             else clockticks6502++;
     }
 }
 
 static void bit() {
-    value_6502 = getvalue();
-    result_6502 = (ushort)a_6502 & value_6502;
+    value = getvalue();
+    result = (ushort)a & value;
    
-    zerocalc(result_6502);
-    status_6502 = (status_6502 & 0x3F) | (uint8)(value_6502 & 0xC0);
+    zerocalc(result);
+    status = (status & 0x3F) | (uint8)(value & 0xC0);
 }
 
 static void bmi() {
-    if ((status_6502 & FLAG_SIGN) == FLAG_SIGN) {
-        oldpc_6502 = pc_6502;
-        pc_6502 += reladdr_6502;
-        if ((oldpc_6502 & 0xFF00) != (pc_6502 & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
+    if ((status & FLAG_SIGN) == FLAG_SIGN) {
+        oldpc = pc;
+        pc += reladdr;
+        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
             else clockticks6502++;
     }
 }
 
 static void bne() {
-    if ((status_6502 & FLAG_ZERO) == 0) {
-        oldpc_6502 = pc_6502;
-        pc_6502 += reladdr_6502;
-        if ((oldpc_6502 & 0xFF00) != (pc_6502 & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
+    if ((status & FLAG_ZERO) == 0) {
+        oldpc = pc;
+        pc += reladdr;
+        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
             else clockticks6502++;
     }
 }
 
 static void bpl() {
-    if ((status_6502 & FLAG_SIGN) == 0) {
-        oldpc_6502 = pc_6502;
-        pc_6502 += reladdr_6502;
-        if ((oldpc_6502 & 0xFF00) != (pc_6502 & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
+    if ((status & FLAG_SIGN) == 0) {
+        oldpc = pc;
+        pc += reladdr;
+        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
             else clockticks6502++;
     }
 }
 
 static void brk_6502() {
-    pc_6502++;
-    push_6502_16(pc_6502); /*push next instruction address onto stack*/
-    push_6502_8(status_6502 | FLAG_BREAK); /*push CPU status to stack*/
+    pc++;
+    push_6502_16(pc); /*push next instruction address onto stack*/
+    push_6502_8(status | FLAG_BREAK); /*push CPU status to stack*/
     setinterrupt(); /*set interrupt flag*/
-    pc_6502 = (ushort)read6502(0xFFFE) | ((ushort)read6502(0xFFFF) << 8);
+    pc = (ushort)read6502(0xFFFE) | ((ushort)read6502(0xFFFF) << 8);
 }
 
 static void bvc() {
-    if ((status_6502 & FLAG_OVERFLOW) == 0) {
-        oldpc_6502 = pc_6502;
-        pc_6502 += reladdr_6502;
-        if ((oldpc_6502 & 0xFF00) != (pc_6502 & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
+    if ((status & FLAG_OVERFLOW) == 0) {
+        oldpc = pc;
+        pc += reladdr;
+        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
             else clockticks6502++;
     }
 }
 
 static void bvs() {
-    if ((status_6502 & FLAG_OVERFLOW) == FLAG_OVERFLOW) {
-        oldpc_6502 = pc_6502;
-        pc_6502 += reladdr_6502;
-        if ((oldpc_6502 & 0xFF00) != (pc_6502 & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
+    if ((status & FLAG_OVERFLOW) == FLAG_OVERFLOW) {
+        oldpc = pc;
+        pc += reladdr;
+        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; /*check if jump crossed a page boundary*/
             else clockticks6502++;
     }
 }
@@ -564,147 +529,147 @@ static void clv() {
 
 static void cmp() {
     penaltyop = 1;
-    value_6502 = getvalue();
-    result_6502 = (ushort)a_6502 - value_6502;
+    value = getvalue();
+    result = (ushort)a - value;
    
-    if (a_6502 >= (uint8)(value_6502 & 0x00FF)) setcarry();
+    if (a >= (uint8)(value & 0x00FF)) setcarry();
         else clearcarry();
-    if (a_6502 == (uint8)(value_6502 & 0x00FF)) setzero();
+    if (a == (uint8)(value & 0x00FF)) setzero();
         else clearzero();
-    signcalc(result_6502);
+    signcalc(result);
 }
 
 static void cpx() {
-    value_6502 = getvalue();
-    result_6502 = (ushort)x_6502 - value_6502;
+    value = getvalue();
+    result = (ushort)x - value;
    
-    if (x_6502 >= (uint8)(value_6502 & 0x00FF)) setcarry();
+    if (x >= (uint8)(value & 0x00FF)) setcarry();
         else clearcarry();
-    if (x_6502 == (uint8)(value_6502 & 0x00FF)) setzero();
+    if (x == (uint8)(value & 0x00FF)) setzero();
         else clearzero();
-    signcalc(result_6502);
+    signcalc(result);
 }
 
 static void cpy() {
-    value_6502 = getvalue();
-    result_6502 = (ushort)y_6502 - value_6502;
+    value = getvalue();
+    result = (ushort)y - value;
    
-    if (y_6502 >= (uint8)(value_6502 & 0x00FF)) setcarry();
+    if (y >= (uint8)(value & 0x00FF)) setcarry();
         else clearcarry();
-    if (y_6502 == (uint8)(value_6502 & 0x00FF)) setzero();
+    if (y == (uint8)(value & 0x00FF)) setzero();
         else clearzero();
-    signcalc(result_6502);
+    signcalc(result);
 }
 
 static void dec() {
-    value_6502 = getvalue();
-    result_6502 = value_6502 - 1;
+    value = getvalue();
+    result = value - 1;
    
-    zerocalc(result_6502);
-    signcalc(result_6502);
+    zerocalc(result);
+    signcalc(result);
    
-    putvalue(result_6502);
+    putvalue(result);
 }
 
 static void dex() {
-    x_6502--;
+    x--;
    
-    zerocalc(x_6502);
-    signcalc(x_6502);
+    zerocalc(x);
+    signcalc(x);
 }
 
 static void dey() {
-    y_6502--;
+    y--;
    
-    zerocalc(y_6502);
-    signcalc(y_6502);
+    zerocalc(y);
+    signcalc(y);
 }
 
 static void eor() {
     penaltyop = 1;
-    value_6502 = getvalue();
-    result_6502 = (ushort)a_6502 ^ value_6502;
+    value = getvalue();
+    result = (ushort)a ^ value;
    
-    zerocalc(result_6502);
-    signcalc(result_6502);
+    zerocalc(result);
+    signcalc(result);
    
-    saveaccum(result_6502);
+    saveaccum(result);
 }
 
 static void inc() {
-    value_6502 = getvalue();
-    result_6502 = value_6502 + 1;
+    value = getvalue();
+    result = value + 1;
    
-    zerocalc(result_6502);
-    signcalc(result_6502);
+    zerocalc(result);
+    signcalc(result);
    
-    putvalue(result_6502);
+    putvalue(result);
 }
 
 static void inx() {
-    x_6502++;
+    x++;
    
-    zerocalc(x_6502);
-    signcalc(x_6502);
+    zerocalc(x);
+    signcalc(x);
 }
 
 static void iny() {
-    y_6502++;
+    y++;
    
-    zerocalc(y_6502);
-    signcalc(y_6502);
+    zerocalc(y);
+    signcalc(y);
 }
 
 static void jmp() {
-    pc_6502 = ea_6502;
+    pc = ea;
 }
 
 static void jsr() {
-    push_6502_16(pc_6502 - 1);
-    pc_6502 = ea_6502;
+    push_6502_16(pc - 1);
+    pc = ea;
 }
 
 static void lda() {
     penaltyop = 1;
-    value_6502 = getvalue();
-    a_6502 = (uint8)(value_6502 & 0x00FF);
+    value = getvalue();
+    a = (uint8)(value & 0x00FF);
    
-    zerocalc(a_6502);
-    signcalc(a_6502);
+    zerocalc(a);
+    signcalc(a);
 }
 
 static void ldx() {
     penaltyop = 1;
-    value_6502 = getvalue();
-    x_6502 = (uint8)(value_6502 & 0x00FF);
+    value = getvalue();
+    x = (uint8)(value & 0x00FF);
    
-    zerocalc(x_6502);
-    signcalc(x_6502);
+    zerocalc(x);
+    signcalc(x);
 }
 
 static void ldy() {
     penaltyop = 1;
-    value_6502 = getvalue();
-    y_6502 = (uint8)(value_6502 & 0x00FF);
+    value = getvalue();
+    y = (uint8)(value & 0x00FF);
    
-    zerocalc(y_6502);
-    signcalc(y_6502);
+    zerocalc(y);
+    signcalc(y);
 }
 
 static void lsr() {
-    value_6502 = getvalue();
-    result_6502 = value_6502 >> 1;
+    value = getvalue();
+    result = value >> 1;
    
-    if (value_6502 & 1) setcarry();
+    if (value & 1) setcarry();
         else clearcarry();
-    zerocalc(result_6502);
-    signcalc(result_6502);
+    zerocalc(result);
+    signcalc(result);
    
-    putvalue(result_6502);
+    putvalue(result);
 }
 
 static void nop() {
-    switch (opcode6502) {
+    switch (opcode) {
         case 0x1C:
         case 0x3C:
         case 0x5C:
@@ -718,90 +683,98 @@ static void nop() {
 
 static void ora() {
     penaltyop = 1;
-    value_6502 = getvalue();
-    result_6502 = (ushort)a_6502 | value_6502;
+    value = getvalue();
+    result = (ushort)a | value;
    
-    zerocalc(result_6502);
-    signcalc(result_6502);
+    zerocalc(result);
+    signcalc(result);
    
-    saveaccum(result_6502);
+    saveaccum(result);
 }
 
 static void pha() {
-    push_6502_8(a_6502);
+    push_6502_8(a);
 }
 
 static void php() {
-    push_6502_8(status_6502 | FLAG_BREAK);
+    push_6502_8(status | FLAG_BREAK);
 }
 
 static void pla() {
-    a_6502 = pull_6502_8();
+    a = pull_6502_8();
    
-    zerocalc(a_6502);
-    signcalc(a_6502);
+    zerocalc(a);
+    signcalc(a);
 }
 
 static void plp() {
-    status_6502 = pull_6502_8() | FLAG_CONSTANT;
+    status = pull_6502_8() | FLAG_CONSTANT;
 }
 
 static void rol() {
-    value_6502 = getvalue();
-    result_6502 = (value_6502 << 1) | (status_6502 & FLAG_CARRY);
-    carrycalc(result_6502);
-    zerocalc(result_6502);
-    signcalc(result_6502);
-    putvalue(result_6502);
+    value = getvalue();
+    result = (value << 1) | (status & FLAG_CARRY);
+   
+    carrycalc(result);
+    zerocalc(result);
+    signcalc(result);
+   
+    putvalue(result);
 }
 
 static void ror() {
-    value_6502 = getvalue();
-    result_6502 = (value_6502 >> 1) | ((status_6502 & FLAG_CARRY) << 7);
-    if (value_6502 & 1) setcarry();
+    value = getvalue();
+    result = (value >> 1) | ((status & FLAG_CARRY) << 7);
+   
+    if (value & 1) setcarry();
         else clearcarry();
-    zerocalc(result_6502);
-    signcalc(result_6502);
-    putvalue(result_6502);
+    zerocalc(result);
+    signcalc(result);
+   
+    putvalue(result);
 }
 
 static void rti() {
-    status_6502 = pull_6502_8();
-    value_6502 = pull_6502_16();
-    pc_6502 = value_6502;
+    status = pull_6502_8();
+    value = pull_6502_16();
+    pc = value;
 }
 
 static void rts() {
-    value_6502 = pull_6502_16();
-    pc_6502 = value_6502 + 1;
+    value = pull_6502_16();
+    pc = value + 1;
 }
 
 static void sbc() {
-    penaltyop = 1;
-    value_6502 = getvalue();
-    result_6502 = ((ushort)a_6502) - value_6502 - (ushort)(status_6502 & FLAG_CARRY);
 
-    carrycalc(result_6502);
-    zerocalc(result_6502);
-    overflowcalc(result_6502, a_6502, value_6502);
-    signcalc(result_6502);
+    penaltyop = 1;
+    value = getvalue() ^ 0x00FF;
+    result = (ushort)a + value + (ushort)(status & FLAG_CARRY);
+   
+    carrycalc(result);
+    zerocalc(result);
+    overflowcalc(result, a, value);
+    signcalc(result);
 
 #ifndef NES_CPU
-    if (status_6502 & FLAG_DECIMAL) {
+/*
+	BUGGED!
+*/
+    if (status & FLAG_DECIMAL) {
         clearcarry();
         /*result -= 0x66;*/
-        if ((result_6502 & 0x0F) > 0x09) {
-            result_6502 -= 0x06;
+        if ((result & 0x0F) > 0x09) {
+            result -= 0x06;
         }
-        if ((result_6502 & 0xF0) > 0x90) {
-            result_6502 -= 0x60;
+        if ((result & 0xF0) > 0x90) {
+            result -= 0x60;
             setcarry();
         }
         clockticks6502++;
     }
 #endif
    
-    saveaccum(result_6502);
+    saveaccum(result);
 }
 
 static void sec() {
@@ -817,54 +790,54 @@ static void sei() {
 }
 
 static void sta() {
-    putvalue(a_6502);
+    putvalue(a);
 }
 
 static void stx() {
-    putvalue(x_6502);
+    putvalue(x);
 }
 
 static void sty() {
-    putvalue(y_6502);
+    putvalue(y);
 }
 
 static void tax() {
-    x_6502 = a_6502;
+    x = a;
    
-    zerocalc(x_6502);
-    signcalc(x_6502);
+    zerocalc(x);
+    signcalc(x);
 }
 
 static void tay() {
-    y_6502 = a_6502;
+    y = a;
    
-    zerocalc(y_6502);
-    signcalc(y_6502);
+    zerocalc(y);
+    signcalc(y);
 }
 
 static void tsx() {
-    x_6502 = sp_6502;
+    x = sp;
    
-    zerocalc(x_6502);
-    signcalc(x_6502);
+    zerocalc(x);
+    signcalc(x);
 }
 
 static void txa() {
-    a_6502 = x_6502;
+    a = x;
    
-    zerocalc(a_6502);
-    signcalc(a_6502);
+    zerocalc(a);
+    signcalc(a);
 }
 
 static void txs() {
-    sp_6502 = x_6502;
+    sp = x;
 }
 
 static void tya() {
-    a_6502 = y_6502;
+    a = y;
    
-    zerocalc(a_6502);
-    signcalc(a_6502);
+    zerocalc(a);
+    signcalc(a);
 }
 
 /*undocumented instructions~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -877,7 +850,7 @@ static void tya() {
     static void sax() {
         sta();
         stx();
-        putvalue(a_6502 & x_6502);
+        putvalue(a & x);
         if (penaltyop && penaltyaddr) clockticks6502--;
     }
 
@@ -990,25 +963,25 @@ static const uint32 ticktable[256] = {
 
 
 void nmi6502() {
-    push_6502_16(pc_6502);
-    push_6502_8(status_6502);
-    status_6502 |= FLAG_INTERRUPT;
-    pc_6502 = (ushort)read6502(0xFFFA) | ((ushort)read6502(0xFFFB) << 8);
+    push_6502_16(pc);
+    push_6502_8(status);
+    status |= FLAG_INTERRUPT;
+    pc = (ushort)read6502(0xFFFA) | ((ushort)read6502(0xFFFB) << 8);
 }
 
 void irq6502() {
 	/*
-    push_6502_16(pc_6502);
+    push_6502_16(pc);
     push_6502_8(status);
     status |= FLAG_INTERRUPT;
-    pc_6502 = (ushort)read6502(0xFFFE) | ((ushort)read6502(0xFFFF) << 8);
+    pc = (ushort)read6502(0xFFFE) | ((ushort)read6502(0xFFFF) << 8);
     */
-   if ((status_6502 & FLAG_INTERRUPT) == 0) {
-        push_6502_16(pc_6502);
-        push_6502_8(status_6502 & ~FLAG_BREAK);
-        status_6502 |= FLAG_INTERRUPT;
-        pc_6502 = mem_6502_read16(0xfffe);
-    }
+	if ((status & FLAG_INTERRUPT) == 0) {
+		push_6502_16(pc);
+		push_6502_8(status & ~FLAG_BREAK);
+		status |= FLAG_INTERRUPT;
+		pc = mem_6502_read16(0xfffe);
+	}
 }
 
 uint8 callexternal = 0;
@@ -1017,35 +990,35 @@ void (*loopexternal)();
 void exec6502(uint32 tickcount) {
     clockgoal6502 += tickcount;
     while (clockticks6502 < clockgoal6502) {
-        opcode6502 = read6502(pc_6502++);
-        status_6502 |= FLAG_CONSTANT;
+        opcode = read6502(pc++);
+        status |= FLAG_CONSTANT;
         penaltyop = 0;
         penaltyaddr = 0;
-       	(*addrtable[opcode6502])();
-        (*optable[opcode6502])();
-        clockticks6502 += ticktable[opcode6502];
+       	(*addrtable[opcode])();
+        (*optable[opcode])();
+        clockticks6502 += ticktable[opcode];
         if (penaltyop && penaltyaddr) clockticks6502++;
-        instructions6502++;
+        instructions++;
         if (callexternal) (*loopexternal)();
     }
 
 }
 
 void step6502() {
-    opcode6502 = read6502(pc_6502++);
-    status_6502 |= FLAG_CONSTANT;
+    opcode = read6502(pc++);
+    status |= FLAG_CONSTANT;
 
     penaltyop = 0;
     penaltyaddr = 0;
 
-    (*addrtable[opcode6502])();
-    (*optable[opcode6502])();
-    clockticks6502 += ticktable[opcode6502];
+    (*addrtable[opcode])();
+    (*optable[opcode])();
+    clockticks6502 += ticktable[opcode];
     /*The following line goes commented out in Mike Chamber's usage of the 6502 emulator for MOARNES*/
     if (penaltyop && penaltyaddr) clockticks6502++;
     clockgoal6502 = clockticks6502;
 
-    instructions6502++;
+    instructions++;
 
     if (callexternal) (*loopexternal)();
 }
