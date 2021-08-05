@@ -1,0 +1,30 @@
+
+Rules for contributing:
+
+1) Repos submitted must be properly organized by "dominant" license.
+
+For instance, a public domain library such as myLittlez80 that includes GPL'd testfiles
+
+must be in the GPL folder, because it has GPL things in it. The code may not be GPL, but
+
+the repository as a whole is.
+
+2) Use submodules `git submodule add https://github.com/C-Chads/my-repository.git` for large projects. 
+
+	put them in the correct folder too, not the root.
+
+3) Fork projects into C-Chads before adding them as sub-modules
+
+4) Implement "make all" and "make clean" if relevant for your project.
+
+5) Single-file or extremely small programs may be put in the repository raw.
+
+6) Don't change another user's files without permission. Duplicate them if you need your own version.
+
+7) Ask Gek (me) before including big stuff into the repo (over 100 megs).
+
+8) Nothing illegal.
+
+9) Be an adult.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Failure to comply with these rules may result in your write permissions being revoked or being kicked from the organization.
