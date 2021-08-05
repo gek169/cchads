@@ -310,19 +310,36 @@ static void absy() { /*absolute,Y*/
     pc += 2;
 }
 
-static void ind() { /*indirect*/
-    ushort eahelp, eahelp2;
-    eahelp = (ushort)read6502(pc) | (ushort)((ushort)read6502(pc+1) << 8);
-    eahelp2 = (eahelp & 0xFF00) | ((eahelp + 1) & 0x00FF); /*replicate 6502 page-boundary wraparound bug*/
-    ea = (ushort)read6502(eahelp) | ((ushort)read6502(eahelp2) << 8);
-    pc += 2;
-}
+
 
 static void indx() { /* (indirect,X)*/
     ushort eahelp;
     eahelp = (ushort)(((ushort)read6502(pc++) + (ushort)x) & 0xFF); /*zero-page wraparound for table pointer*/
     ea = (ushort)read6502(eahelp & 0x00FF) | ((ushort)read6502((eahelp+1) & 0x00FF) << 8);
 }
+
+#ifndef CMOS6502
+static void ind() { /*indirect addressing on the normal NMOS 6502*/
+    ushort eahelp, eahelp2;
+    eahelp = mem_6502_read16(pc);
+    eahelp2 =
+        (eahelp & 0xFF00) |
+        ((eahelp + 1) & 0x00FF);
+	ea =
+		(ushort)read6502(eahelp) | 
+		((ushort)read6502(eahelp2) << 8);
+    pc += 2;
+}
+#else
+static void ind() { /*Fixed version from the CMOS chips.*/
+    ushort eahelp;
+    eahelp = mem_6502_read16(pc);
+    if ((eahelp&0x00ff)==0xff) clockticks6502++;
+    ea = mem_6502_read16(eahelp);
+    pc += 2;
+}
+#endif
+
 
 static void indy() { /* (indirect),Y*/
     ushort eahelp, eahelp2, startpage;
@@ -350,8 +367,10 @@ static ushort getvalue16() {
 }
 
 static void putvalue(ushort saveval) {
-    if (addrtable[opcode] == acc) a = (uint8)(saveval & 0x00FF);
-        else write6502(ea, (saveval & 0x00FF));
+    if (addrtable[opcode] == acc) 
+    	a = (uint8)(saveval & 0x00FF);
+    else 
+    	write6502(ea, (saveval & 0x00FF));
 }
 
 
@@ -723,23 +742,19 @@ static void plp() {
 static void rol() {
     value = getvalue();
     result = (value << 1) | (status & FLAG_CARRY);
-   
     carrycalc(result);
     zerocalc(result);
     signcalc(result);
-   
     putvalue(result);
 }
 
 static void ror() {
     value = getvalue();
     result = (value >> 1) | ((status & FLAG_CARRY) << 7);
-   
     if (value & 1) setcarry();
         else clearcarry();
     zerocalc(result);
     signcalc(result);
-   
     putvalue(result);
 }
 
