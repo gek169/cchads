@@ -3,7 +3,7 @@ CC=gcc
 CPP=g++
 CFLAGS=-I./include/
 ALL_T=
-UNAPPROVED_T= duhmenu cpp-shell cpp-shell-fork
+UNAPPROVED_T= duhmenu cpp-shell cpp-shell-fork myLittlez80 myLittle6502
 all: $(ALL_T)
 	@echo "The following targets are not approved by the Makefile maintainer:"
 	@echo $(UNAPPROVED_T)
@@ -16,3 +16,9 @@ cpp-shell:
 	$(CPP) cpp-shell.cpp -Os -o cpp-shell
 cpp-shell-fork:
 	$(CPP) cpp-shell-fork.cpp -Os -o cpp-shell-fork
+
+myLittlez80:
+	@cd MyLittlez80 && $(MAKE) && cd ..
+
+myLittle6502:
+	@cd MyLittle6502 && $(MAKE) && cd ..
