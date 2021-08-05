@@ -21,7 +21,7 @@ cpp-shell-fork:
 	$(CPP) cpp-shell-fork.cpp -Os -o cpp-shell-fork
 
 myLittlez80:
-	@cd MyLittlez80 && $(MAKE) && cd ..
+	@cd MyLittlez80 && $(MAKE) runner && cd ..
 
 myLittle6502:
 	@cd MyLittle6502 && $(MAKE) && cd ..
