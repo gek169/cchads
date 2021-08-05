@@ -1,6 +1,12 @@
-/* Fake6502 CPU emulator core v1.1 *******************
- *         Author:Mike Chambers (miker00lz@gmail.com)*
+/* Fake6502 CPU emulator core v1.2 *******************
+ * Current Maintainer: David MHS Webster             *
+ * https://github.com/gek169                         *
+ * Original Author: Mike Chambers                    *
+ * License: CC0/Public Domain                        *
  *****************************************************
+ * v1.2 - Fixed decimal mode along with several      *
+ * other oddities that don't match up with tests.    *
+ *                                                   *
  * v1.1 - Small bugfix in BIT opcode, but it was the *
  *        difference between a few games in my NES   *
  *        emulator working and being broken!         *
