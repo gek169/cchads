@@ -7,3 +7,6 @@
 [submodule "MIT/tinygl"]
 	path = MIT/tinygl
 	url = https://github.com/C-Chads/tinygl.git
+[submodule "MIT/tinyexpr"]
+	path = MIT/tinyexpr
+	url = https://github.com/C-Chads/tinyexpr
