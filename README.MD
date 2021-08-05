@@ -15,6 +15,8 @@ At a minimum to build this library you will need:
 * rm and cd commands in your shell
 * gnu make (to use the build system)
 
-These programs were written (or used) by the C Chads discord server.
-### Free software is freedom!
+These programs were written (or used) by the C Chads.
 
+### I WANT TO JOIN
+
+Make an issue on our ![constitution](https://github.com/C-Chads/C-Chads) 
