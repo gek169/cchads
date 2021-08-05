@@ -1,0 +1,6 @@
+[submodule "GPL/MyLittle6502"]
+	path = GPL/MyLittle6502
+	url = https://github.com/C-Chads/MyLittle6502
+[submodule "GPL/MyLittlez80"]
+	path = GPL/MyLittlez80
+	url = https://github.com/C-Chads/MyLittlez80
