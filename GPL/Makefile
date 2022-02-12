@@ -10,8 +10,6 @@ all: $(ALL_T)
 	@echo "You can make them by invoking make <target> in GPL/"
 clean:
 	rm -f $(ALL_T) $(UNAPPROVED_T)
-	@cd MyLittle6502 && $(MAKE) clean && cd ..
-	@cd MyLittlez80 && $(MAKE) clean && cd ..
 	
 duhmenu:
 	$(CPP) duhmenu.cpp -Os -o duhmenu
@@ -20,8 +18,4 @@ cpp-shell:
 cpp-shell-fork:
 	$(CPP) cpp-shell-fork.cpp -Os -o cpp-shell-fork
 
-myLittlez80:
-	@cd MyLittlez80 && $(MAKE) runner && cd ..
 
-myLittle6502:
-	@cd MyLittle6502 && $(MAKE) && cd ..
